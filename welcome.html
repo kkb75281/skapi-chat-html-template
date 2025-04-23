@@ -171,8 +171,7 @@
                 condition: '>',
                 value: ' '
             }).then(res => {
-                console.log('Realtime groups:', res);
-                console.log(res.list); // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
+                console.log('Realtime groups:', res); // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
                 if(res.list.length) {
                     let RealtimeGroups = document.getElementById("RealtimeGroups");
                     if (RealtimeGroups) {
