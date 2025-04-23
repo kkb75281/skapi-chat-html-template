@@ -17,10 +17,9 @@
 
     <script>
         /*
-            Get user profile and display it on the page, 
-            Set user variable to use it later.
+            Get user profile and display it on the page.
         */
-        let user = skapi.getProfile().then(u => {
+        skapi.getProfile().then(u => {
             if (u) {
                 let welcomeMessage = document.getElementById("WelcomeMessage");
                 if (welcomeMessage) {
@@ -35,7 +34,19 @@
             return u;
         });
 
-        let RealtimeCallback = (rt) => {
+        let userCache = {};
+
+        let getUserInfo = async (user_id)=>{
+            if(!userCache[user_id]) {
+                user = (await skapi.getUsers({searchFor: 'user_id', value: user_id})).list?.[0];
+                if(user) {
+                    userCache[user_id] = user;
+                }
+            }
+            return userCache[user_id];
+        }
+
+        let RealtimeCallback = async (rt) => {
             // Callback executed when there is data transfer between the users.
             /**
             rt = {
@@ -45,14 +56,69 @@
             }
             */
             console.log(rt);
+
+            if(rt.type === 'message') {
+                // Append the message to the chatbox
+                let chatbox = document.getElementById('chatMessages');
+                if (chatbox) {
+                    let user_id = rt.sender;
+                    let user = await getUserInfo(user_id);
+                    let username = user.name || user.email || user.user_id;
+                    
+                    let textAlign = (user_id === skapi.user.user_id) ? 'right' : 'left';
+
+                    chatbox.innerHTML += /*html*/`<p style='word-wrap:break-word; text-align: ${textAlign}'><strong>${username}</strong><br>${rt.message.chatmsg}</p>`;
+                    chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+                }
+            }
+            else if(rt.type === 'error') {
+                alert(rt.message);
+            }
+            else if(rt.type === 'notice') {
+                if(rt.message.includes('message group')) {
+                    // User joined the group
+                    let user_id = rt.sender;
+                    let message = rt.message;
+                    
+                    user = await getUserInfo(user_id);
+                    
+                    let chatbox = document.getElementById('chatMessages');
+                    if(user && chatbox) {
+                        message = message.replace(/"([^"]+)"/, `"${user.name || user.email || user.user_id}"`);
+                        chatbox.innerHTML += `<p>${message}</p>`;
+                        chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+                    }
+                }
+            }
         }
 
         skapi.connectRealtime(RealtimeCallback);
 
     </script>
 
-    <br>
+</main>
+<section id='groupList' style="max-width: 640px; margin: auto;" hidden>
+    <br><br>
+    <script>
+        async function checkIfGroupExists(event) {
+            let group = (await skapi.getRealtimeGroups(event)).list;
+            if (group.length) {
+                alert("Group already exists.");
+                throw "Group already exists.";
+            }
+        }
+    </script>
+    <form action='#{value}' onsubmit="checkIfGroupExists(event)">
+        <input name="searchFor" value="group" hidden>
+        <input name="condition" value="=" hidden>
+        <label>Create New Chat Group:
+            <input type="text" id="el_inp_group" name="value" placeholder="Enter group name" required>
+        </label>
+        <button type="submit">Create</button>
+    </form>
 
+    <br>
+    
     <table>
         <thead>
             <tr>
@@ -101,10 +167,18 @@
             <!-- Realtime groups will be displayed here -->
         </tbody>
         <script>
-            skapi.getRealtimeGroups().then(res => {
-                console.log(res.list) // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
+            skapi.getRealtimeGroups({
+                searchFor: 'groups',
+                condition: '>',
+                value: ' '
+            }).then(res => {
+                console.log('Realtime groups:', res);
+                console.log(res.list); // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
                 if(res.list.length) {
-
+                    let RealtimeGroups = document.getElementById("RealtimeGroups");
+                    if (RealtimeGroups) {
+                        RealtimeGroups.innerHTML = res.list.map(group => /*html*/`<tr><td><a href="#${group.group}">${group.group}</a></td><td>${group.number_of_users}</td></tr>`).join('');
+                    }
                 }
                 else {
                     let RealtimeGroups = document.getElementById("RealtimeGroups");
@@ -115,4 +189,53 @@
             });
         </script>
     </table>
-</main>
+</section>
+
+<section id='chatbox' style="max-width: 640px; margin: auto;" hidden>
+    <h2>Chat Group <span id="el_groupname"></span></h2>
+    <div id="chatMessages"></div>
+    <style>
+        #chatMessages {
+            border:solid;
+            height: 300px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+    </style>
+    <br>
+    <form onsubmit="skapi.postRealtime(event, currentGroup).then(()=>this.reset())">
+        <input type="text" name="chatmsg" placeholder="Type your message..." required>
+        <button type="submit">Send</button>
+    </form>
+    <br>
+    <!-- Remove hash from URL without reloading the page -->
+    <a href="#" onclick="history.replaceState(null, '', location.pathname); joinGroup();">Back to group list</a>
+</section>
+
+<script>
+    let currentGroup = null;
+    function joinGroup() {
+        document.getElementById('chatMessages').innerHTML = ""; // Clear chat messages
+        console.log('Initial hash:', location.hash);
+        if (location.hash) {
+            document.getElementById('chatbox').hidden = false; // Show chatbox
+            document.getElementById('groupList').hidden = true; // Hide group list
+            // Get the new hash value
+            currentGroup = location.hash.replace('#', '');
+            document.getElementById('el_groupname').innerText = `"${currentGroup}"`;
+            return skapi.joinRealtime({group: currentGroup});
+        }
+        else {
+            document.getElementById('chatbox').hidden = true; // Hide chatbox
+            document.getElementById('groupList').hidden = false; // Show group list
+            document.getElementById('el_groupname').innerText = "";
+            return skapi.joinRealtime({group: null}); // leave group
+        }
+    }
+    // Add an event listener for the hashchange event
+    window.addEventListener('hashchange', joinGroup);
+
+    // Optionally, handle the initial hash when the page loads
+    document.addEventListener('DOMContentLoaded', joinGroup);
+</script>
+
