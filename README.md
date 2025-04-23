@@ -1,9 +1,15 @@
 # Skapi HTML Chat Example
 
-This is a HTML example for building chat application using Skapi's realtime features.
+This is a HTML example for building basic chat application using Skapi's realtime features.
 
-Users must login to post and fetch uploaded photos.
+Users must login to post and fetch realtime messages.
 
+This example features examples such as:
+
+- Creating, joining, and leaving rooms
+- Sending and receiving messages
+- Fetching partcipants info
+  
 ## Recommeded VSCode Extention
 
 For HTML projects we often tend to use element.innerHTML.

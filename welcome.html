@@ -104,7 +104,7 @@
             let group = (await skapi.getRealtimeGroups(event)).list;
             if (group.length) {
                 alert("Group already exists.");
-                throw "Group already exists.";
+                throw new Error("Group already exists.");
             }
         }
     </script>
