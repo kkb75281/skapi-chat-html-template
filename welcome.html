@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.jsdelivr.net/npm/skapi-js@latest/dist/skapi.js"></script>
+
+<script src="service.js"></script>
+<link rel="stylesheet" href="custom.css">
+
+<main style="max-width: 640px; margin: auto;">
+    <section>
+        <h1>Login Success</h1>
+        <p id="WelcomeMessage"></p>
+        <pre style='max-width: 100%; overflow-x: auto;' id="UserInfo"></pre>
+        <button onclick="skapi.logout().then(()=>location.href = 'index.html')">Logout</button>
+    </section>
+
+    <script>
+        /*
+            Get user profile and display it on the page, 
+            Set user variable to use it later.
+        */
+        let user = skapi.getProfile().then(u => {
+            if (u) {
+                let welcomeMessage = document.getElementById("WelcomeMessage");
+                if (welcomeMessage) {
+                    welcomeMessage.innerHTML = `Welcome, ${u.name || u.email || u.user_id}!`;
+                }
+    
+                let userInfo = document.getElementById("UserInfo");
+                if (userInfo) {
+                    userInfo.innerHTML = JSON.stringify(u, null, 2);
+                }
+            }
+            return u;
+        });
+
+        let RealtimeCallback = (rt) => {
+            // Callback executed when there is data transfer between the users.
+            /**
+            rt = {
+                type: 'message' | 'private' | 'error' | 'success' | 'close' | 'notice',
+                message: '...',
+                ...
+            }
+            */
+            console.log(rt);
+        }
+
+        skapi.connectRealtime(RealtimeCallback);
+
+    </script>
+
+    <br>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Chat Group</th>
+                <th>Users</th>
+            </tr>
+        </thead>
+        <style>
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+
+            th, td {
+                padding: 8px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+
+            tr:hover {
+                background-color: #f5f5f5;
+            }
+
+            th {
+                background-color: #4CAF50;
+                color: white;
+            }
+            th:first-child {
+                width: 70%;
+            }
+            td:first-child {
+                width: 70%;
+            }
+            tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+            tr:nth-child(odd) {
+                background-color: #ffffff;
+            }
+        </style>
+        <tbody id="RealtimeGroups">
+            <tr>
+                <td>Loading...</td>
+                <td>Loading...</td>
+            </tr>
+            <!-- Realtime groups will be displayed here -->
+        </tbody>
+        <script>
+            skapi.getRealtimeGroups().then(res => {
+                console.log(res.list) // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
+                if(res.list.length) {
+
+                }
+                else {
+                    let RealtimeGroups = document.getElementById("RealtimeGroups");
+                    if (RealtimeGroups) {
+                        RealtimeGroups.innerHTML = `<tr><td colspan="2">No groups found.</td></tr>`;
+                    }
+                }
+            });
+        </script>
+    </table>
+</main>
