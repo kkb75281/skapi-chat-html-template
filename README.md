@@ -6,9 +6,12 @@ Users must login to post and fetch realtime messages.
 
 This example features examples such as:
 
-- Creating, joining, and leaving rooms
-- Sending and receiving messages
-- Fetching partcipants info
+- Creating, joining, and leaving chat rooms
+- Sending and receiving websocket messages
+- Fetching messengers info
+- Sending private messeges to user
+
+All the main code is in **welcome.html**
   
 ## Recommeded VSCode Extention
 
