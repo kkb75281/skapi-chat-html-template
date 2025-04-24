@@ -4,7 +4,7 @@ This is a HTML example for building basic chat application using Skapi's realtim
 
 Users must login to post and fetch realtime messages.
 
-This example features examples such as:
+This example features:
 
 - Creating, joining, and leaving chat rooms
 - Sending and receiving websocket messages
