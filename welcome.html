@@ -128,14 +128,17 @@
                     let message = rt.message;
 
                     if(rt.message.includes('has left')) {
-                        delete participants[user_id]; // Remove the user from the participants list
+                        // remove the user from the participants list
                         let participantsList = document.getElementById('participants');
                         let participant = document.getElementById(user_id);
                         let participantBr = participant.nextSibling;
-                        participantsList.removeChild(nextSibling);
+                        participantsList.removeChild(participantBr);
                         participantsList.removeChild(participant);
+                        
+                        delete participants[user_id];
                     }
                     else if(rt.message.includes('has joined')) {
+                        // Add the user to the participants list
                         let user = await getUserInfo(user_id);
                         let chatbox = document.getElementById('chatMessages');
                         message = message.replace(/"([^"]+)"/, `"${user.name || user.email || user.user_id}"`);
