@@ -104,7 +104,6 @@
 
                 document.getElementById('privateMsgDialog').showModal();
             }
-
             if(rt.type === 'message') {
                 // Append the message to the chatbox
                 let chatbox = document.getElementById('chatMessages');
@@ -127,11 +126,18 @@
                     // User joined the group
                     let user_id = rt.sender;
                     let message = rt.message;
-                    
-                    let user = await getUserInfo(user_id);
-                    
-                    let chatbox = document.getElementById('chatMessages');
-                    if(user && chatbox) {
+
+                    if(rt.message.includes('has left')) {
+                        delete participants[user_id]; // Remove the user from the participants list
+                        let participantsList = document.getElementById('participants');
+                        let participant = document.getElementById(user_id);
+                        let participantBr = participant.nextSibling;
+                        participantsList.removeChild(nextSibling);
+                        participantsList.removeChild(participant);
+                    }
+                    else if(rt.message.includes('has joined')) {
+                        let user = await getUserInfo(user_id);
+                        let chatbox = document.getElementById('chatMessages');
                         message = message.replace(/"([^"]+)"/, `"${user.name || user.email || user.user_id}"`);
                         chatbox.innerHTML += `<p>${message}</p>`;
                         chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
