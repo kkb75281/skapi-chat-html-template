@@ -5,7 +5,6 @@
 <script src="https://cdn.jsdelivr.net/npm/skapi-js@latest/dist/skapi.js"></script>
 
 <script src="service.js"></script>
-<link rel="stylesheet" href="custom.css">
 
 <main style="max-width: 640px; margin: auto;">
     <section>
@@ -61,17 +60,15 @@
                     participantsList.appendChild(strongTag);
                     participantsList.appendChild(document.createElement('br'));
                     
-                    if(user.user_id !== skapi.user.user_id) {
-                        // Add event listener to the user name to open the private message dialog only if the user is not the current user.
-                        // This is to avoid adding the event listener to the current user.
-                        strongTag.classList.add('clickable');
-                        strongTag.onclick = e => {
-                            console.log({e})
-                            sendTo = user;
-                            document.getElementById('privateMsgTo').innerText = sendTo.name || sendTo.email || sendTo.user_id;
-                            document.getElementById('privateMsgSender').showModal();
-                        };
-                    }
+                    // Add event listener to the user name to open the private message dialog.
+                    // This is to avoid adding the event listener to the current user.
+                    strongTag.classList.add('clickable');
+                    strongTag.onclick = e => {
+                        console.log({e})
+                        sendTo = user;
+                        document.getElementById('privateMsgTo').innerText = sendTo.name || sendTo.email || sendTo.user_id;
+                        document.getElementById('privateMsgSender').showModal();
+                    };
                 }
             }
 
