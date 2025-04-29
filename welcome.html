@@ -36,7 +36,7 @@
         let participants = {};
         let sendTo = null;
 
-        let getUserInfo = async (user_id)=>{
+        let getUserInfo = async (user_id) => {
             if(!participants[user_id]) {
                 // get user info from skapi if not already fetched
                 // This is to avoid fetching the same user info multiple times.
@@ -46,7 +46,7 @@
                     participants[user_id] = skapi.user;
                     return skapi.user;
                 }
-
+                
                 let user = (await skapi.getUsers({searchFor: 'user_id', value: user_id})).list?.[0];
                 if(user) {
                     participants[user_id] = user;
@@ -119,7 +119,8 @@
                 }
             }
             else if(rt.type === 'error') {
-                alert(rt.message);
+                // alert(rt.message);
+                console.error(rt.message);
             }
             else if(rt.type === 'notice') {
                 if(rt.message.includes('message group')) {
@@ -127,17 +128,23 @@
                     let user_id = rt.sender;
                     let message = rt.message;
 
-                    if(rt.message.includes('has left')) {
+                    if(["USER_LEFT", "USER_DISCONNECTED"].includes(rt.code)) {
                         // remove the user from the participants list
                         let participantsList = document.getElementById('participants');
                         let participant = document.getElementById(user_id);
                         let participantBr = participant.nextSibling;
                         participantsList.removeChild(participantBr);
                         participantsList.removeChild(participant);
-                        
+
+                        let user = await getUserInfo(user_id);
+                        let chatbox = document.getElementById('chatMessages');
+                        message = message.replace(/"([^"]+)"/, `"${user.name || user.email || user.user_id}"`);
+                        chatbox.innerHTML += `<p>${message}</p>`;
+                        chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+
                         delete participants[user_id];
                     }
-                    else if(rt.message.includes('has joined')) {
+                    else if("USER_JOINED" === rt.code) {
                         // Add the user to the participants list
                         let user = await getUserInfo(user_id);
                         let chatbox = document.getElementById('chatMessages');
@@ -279,7 +286,7 @@
             <button type="submit">Send</button>
         </form>
         <br>
-        <!-- Remove hash from URL without reloading the page -->
+
         <a href="welcome.html">Back to group list</a>
     </section>
 </main>
