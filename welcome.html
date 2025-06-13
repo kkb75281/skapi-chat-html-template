@@ -1,30 +1,32 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
+<meta charset="utf-8" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script src="https://cdn.jsdelivr.net/npm/skapi-js@latest/dist/skapi.js"></script>
-
 <script src="service.js"></script>
+<link rel="stylesheet" href="main.css" />
 
-<main style="max-width: 640px; margin: auto;">
-    <section>
-        <h1>Login Success</h1>
-        <p id="WelcomeMessage"></p>
-        <pre style='max-width: 100%; overflow-x: auto;' id="UserInfo"></pre>
-        <button onclick="skapi.logout().then(()=>location.href = 'index.html')">Logout</button>
-    </section>
+<main>
+    <h1>Login Success</h1>
+    <p id="WelcomeMessage"></p>
+    <pre style="max-width: 100%; overflow-x: auto" id="UserInfo"></pre>
+    <button onclick="skapi.logout().then(()=>location.href = 'index.html')">
+        Logout
+    </button>
 
     <script>
         /*
             Get user profile and display it on the page.
         */
-        skapi.getProfile().then(u => {
+        skapi.getProfile().then((u) => {
             if (u) {
                 let welcomeMessage = document.getElementById("WelcomeMessage");
                 if (welcomeMessage) {
-                    welcomeMessage.innerHTML = `Welcome, ${u.name || u.email || u.user_id}!`;
+                    welcomeMessage.innerHTML = `Welcome, ${
+                        u.name || u.email || u.user_id
+                    }!`;
                 }
-    
+
                 let userInfo = document.getElementById("UserInfo");
                 if (userInfo) {
                     userInfo.innerHTML = JSON.stringify(u, null, 2);
@@ -37,43 +39,51 @@
         let sendTo = null;
 
         let getUserInfo = async (user_id) => {
-            if(!participants[user_id]) {
+            if (!participants[user_id]) {
                 // get user info from skapi if not already fetched
                 // This is to avoid fetching the same user info multiple times.
 
-                if(user_id === skapi.user.user_id) {
+                if (user_id === skapi.user.user_id) {
                     // If the user is the current user, return the current user info.
                     participants[user_id] = skapi.user;
                     return skapi.user;
                 }
-                
-                let user = (await skapi.getUsers({searchFor: 'user_id', value: user_id})).list?.[0];
-                if(user) {
+
+                let user = (
+                    await skapi.getUsers({
+                        searchFor: "user_id",
+                        value: user_id,
+                    })
+                ).list?.[0];
+                if (user) {
                     participants[user_id] = user;
 
                     // Append the user to the participants list
-                    let strongTag = document.createElement('strong');
+                    let strongTag = document.createElement("strong");
                     strongTag.id = user.user_id;
-                    strongTag.innerText = user.name || user.email || user.user_id;
+                    strongTag.innerText =
+                        user.name || user.email || user.user_id;
 
-                    let participantsList = document.getElementById('participants');
+                    let participantsList =
+                        document.getElementById("participants");
                     participantsList.appendChild(strongTag);
-                    participantsList.appendChild(document.createElement('br'));
-                    
+                    participantsList.appendChild(document.createElement("br"));
+
                     // Add event listener to the user name to open the private message dialog.
                     // This is to avoid adding the event listener to the current user.
-                    strongTag.classList.add('clickable');
-                    strongTag.onclick = e => {
-                        console.log({e})
+                    strongTag.classList.add("clickable");
+                    strongTag.onclick = (e) => {
+                        console.log({ e });
                         sendTo = user;
-                        document.getElementById('privateMsgTo').innerText = sendTo.name || sendTo.email || sendTo.user_id;
-                        document.getElementById('privateMsgSender').showModal();
+                        document.getElementById("privateMsgTo").innerText =
+                            sendTo.name || sendTo.email || sendTo.user_id;
+                        document.getElementById("privateMsgSender").showModal();
                     };
                 }
             }
 
             return participants[user_id];
-        }
+        };
 
         let RealtimeCallback = async (rt) => {
             // Callback executed when there is data transfer between the users.
@@ -85,84 +95,89 @@
             }
             */
             console.log(rt);
-            if(rt.type === 'private') {
+            if (rt.type === "private") {
                 // Private message
 
-                if(rt.sender === skapi.user.user_id) {
+                if (rt.sender === skapi.user.user_id) {
                     // If the sender is the current user, do nothing.
                     return;
                 }
 
                 let msgSender = await getUserInfo(rt.sender);
-                let username = msgSender.name || msgSender.email || msgSender.user_id;
-                
-                let privateMsgFrom = document.getElementById('privateMsgFrom');
+                let username =
+                    msgSender.name || msgSender.email || msgSender.user_id;
+
+                let privateMsgFrom = document.getElementById("privateMsgFrom");
                 privateMsgFrom.innerHTML = username;
 
-                let privateMsg = document.getElementById('privateMsg');
+                let privateMsg = document.getElementById("privateMsg");
                 privateMsg.innerHTML = rt.message.msg;
 
-                document.getElementById('privateMsgDialog').showModal();
+                document.getElementById("privateMsgDialog").showModal();
             }
-            if(rt.type === 'message') {
+            if (rt.type === "message") {
                 // Append the message to the chatbox
-                let chatbox = document.getElementById('chatMessages');
+                let chatbox = document.getElementById("chatMessages");
                 if (chatbox) {
                     let user_id = rt.sender;
                     let user = await getUserInfo(user_id);
                     let username = user.name || user.email || user.user_id;
-                    
-                    let textAlign = (user_id === skapi.user.user_id) ? 'right' : 'left';
 
-                    chatbox.innerHTML += /*html*/`<p style='word-wrap:break-word; text-align: ${textAlign}'><strong>${username}</strong><br>${rt.message.chatmsg}</p>`;
+                    let textAlign =
+                        user_id === skapi.user.user_id ? "right" : "left";
+
+                    chatbox.innerHTML += /*html*/ `<p style='word-wrap:break-word; text-align: ${textAlign}'><strong>${username}</strong><br>${rt.message.chatmsg}</p>`;
                     chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
                 }
-            }
-            else if(rt.type === 'error') {
+            } else if (rt.type === "error") {
                 // alert(rt.message);
                 console.error(rt.message);
-            }
-            else if(rt.type === 'notice') {
-                if(rt.message.includes('message group')) {
+            } else if (rt.type === "notice") {
+                if (rt.message.includes("message group")) {
                     // User joined the group
                     let user_id = rt.sender;
                     let message = rt.message;
 
-                    if(["USER_LEFT", "USER_DISCONNECTED"].includes(rt.code)) {
+                    if (["USER_LEFT", "USER_DISCONNECTED"].includes(rt.code)) {
                         // remove the user from the participants list
-                        let participantsList = document.getElementById('participants');
+                        let participantsList =
+                            document.getElementById("participants");
                         let participant = document.getElementById(user_id);
                         let participantBr = participant.nextSibling;
                         participantsList.removeChild(participantBr);
                         participantsList.removeChild(participant);
 
                         let user = await getUserInfo(user_id);
-                        let chatbox = document.getElementById('chatMessages');
-                        message = message.replace(/"([^"]+)"/, `"${user.name || user.email || user.user_id}"`);
+                        let chatbox = document.getElementById("chatMessages");
+                        message = message.replace(
+                            /"([^"]+)"/,
+                            `"${user.name || user.email || user.user_id}"`
+                        );
                         chatbox.innerHTML += `<p>${message}</p>`;
                         chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
 
                         delete participants[user_id];
-                    }
-                    else if("USER_JOINED" === rt.code) {
+                    } else if ("USER_JOINED" === rt.code) {
                         // Add the user to the participants list
                         let user = await getUserInfo(user_id);
-                        let chatbox = document.getElementById('chatMessages');
-                        message = message.replace(/"([^"]+)"/, `"${user.name || user.email || user.user_id}"`);
+                        let chatbox = document.getElementById("chatMessages");
+                        message = message.replace(
+                            /"([^"]+)"/,
+                            `"${user.name || user.email || user.user_id}"`
+                        );
                         chatbox.innerHTML += `<p>${message}</p>`;
                         chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
                     }
                 }
             }
-        }
+        };
 
         // Connect to the realtime websocket
         skapi.connectRealtime(RealtimeCallback);
-
     </script>
 
-    <section id='groupList' hidden>
-        <br><br>
+    <section id="groupList" hidden>
+        <br /><br />
         <script>
             async function checkIfGroupExists(event) {
                 let group = (await skapi.getRealtimeGroups(event)).list;
@@ -171,17 +186,24 @@
                 }
             }
         </script>
-        <form action='#{value}' onsubmit="checkIfGroupExists(event)">
-            <input name="searchFor" value="group" hidden>
-            <input name="condition" value="=" hidden>
-            <label>Create New Chat Group:
-                <input type="text" id="el_inp_group" name="value" placeholder="Enter group name" required>
+        <form action="#{value}" onsubmit="checkIfGroupExists(event)">
+            <input name="searchFor" value="group" hidden />
+            <input name="condition" value="=" hidden />
+            <label
+                >Create New Chat Group:
+                <input
+                    type="text"
+                    id="el_inp_group"
+                    name="value"
+                    placeholder="Enter group name"
+                    required
+                />
             </label>
             <button type="submit">Create</button>
         </form>
 
-        <br>
-        
+        <br />
+
         <table>
             <thead>
                 <tr>
@@ -195,7 +217,8 @@
                     width: 100%;
                 }
 
-                th, td {
+                th,
+                td {
                     padding: 8px;
                     text-align: left;
                     border-bottom: 1px solid #ddd;
@@ -205,7 +228,7 @@
                     background-color: #f5f5f5;
                 }
                 th {
-                    background-color: #4CAF50;
+                    background-color: #4caf50;
                     color: white;
                 }
                 th:first-child {
@@ -226,33 +249,41 @@
                 <!-- Realtime groups will be displayed here -->
             </tbody>
             <script>
-                skapi.getRealtimeGroups({
-                    searchFor: 'groups',
-                    condition: '>',
-                    value: ' '
-                }).then(res => {
-                    console.log('Realtime groups:', res); // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
-                    if(res.list.length) {
-                        let RealtimeGroups = document.getElementById("RealtimeGroups");
-                        if (RealtimeGroups) {
-                            RealtimeGroups.innerHTML = res.list.map(group => /*html*/`<tr><td><a href="#${group.group}">${group.group}</a></td><td>${group.number_of_users}</td></tr>`).join('');
+                skapi
+                    .getRealtimeGroups({
+                        searchFor: "groups",
+                        condition: ">",
+                        value: " ",
+                    })
+                    .then((res) => {
+                        console.log("Realtime groups:", res); // [{ group: 'HelloWorld', number_of_users: 1 }, ...]
+                        if (res.list.length) {
+                            let RealtimeGroups =
+                                document.getElementById("RealtimeGroups");
+                            if (RealtimeGroups) {
+                                RealtimeGroups.innerHTML = res.list
+                                    .map(
+                                        (group) =>
+                                            /*html*/ `<tr><td><a href="#${group.group}">${group.group}</a></td><td>${group.number_of_users}</td></tr>`
+                                    )
+                                    .join("");
+                            }
+                        } else {
+                            let RealtimeGroups =
+                                document.getElementById("RealtimeGroups");
+                            if (RealtimeGroups) {
+                                RealtimeGroups.innerHTML = `<tr><td colspan="2">No groups found.</td></tr>`;
+                            }
                         }
-                    }
-                    else {
-                        let RealtimeGroups = document.getElementById("RealtimeGroups");
-                        if (RealtimeGroups) {
-                            RealtimeGroups.innerHTML = `<tr><td colspan="2">No groups found.</td></tr>`;
-                        }
-                    }
-                });
+                    });
             </script>
         </table>
     </section>
 
-    <section id='chatbox' hidden>
+    <section id="chatbox" hidden>
         <h2>Chat Group <span id="el_groupname"></span></h2>
 
-        <div style="display: flex;">
+        <div style="display: flex">
             <div id="chatMessages"></div>
             <div id="participants"></div>
         </div>
@@ -281,12 +312,19 @@
                 text-decoration: underline;
             }
         </style>
-        <br>
-        <form onsubmit="skapi.postRealtime(event, currentGroup).then(()=>this.reset())">
-            <input type="text" name="chatmsg" placeholder="Type your message..." required>
+        <br />
+        <form
+            onsubmit="skapi.postRealtime(event, currentGroup).then(()=>this.reset())"
+        >
+            <input
+                type="text"
+                name="chatmsg"
+                placeholder="Type your message..."
+                required
+            />
             <button type="submit">Send</button>
         </form>
-        <br>
+        <br />
 
         <a href="welcome.html">Back to group list</a>
     </section>
@@ -295,61 +333,81 @@
 <dialog id="privateMsgDialog">
     <strong>Private Message From: <span id="privateMsgFrom"></span></strong>
     <p id="privateMsg"></p>
-    <button id="closeDialog" onclick="document.getElementById('privateMsgDialog').close()">Close</button>
+    <button
+        id="closeDialog"
+        onclick="document.getElementById('privateMsgDialog').close()"
+    >
+        Close
+    </button>
 </dialog>
 
 <dialog id="privateMsgSender">
     <strong>Private Message To: <span id="privateMsgTo"></span></strong>
-    
-    <br><br>
 
-    <form onsubmit="skapi.postRealtime(event, sendTo.user_id).then(()=>{ this.reset(); document.getElementById('privateMsgSender').close(); });">
-        <input name="msg" placeholder="Write Message..." required> <input type="submit" value="Send">
+    <br /><br />
+
+    <form
+        onsubmit="skapi.postRealtime(event, sendTo.user_id).then(()=>{ this.reset(); document.getElementById('privateMsgSender').close(); });"
+    >
+        <input name="msg" placeholder="Write Message..." required />
+        <input type="submit" value="Send" />
     </form>
 
-    <br>
+    <br />
 
-    <button id="closeDialog" onclick="document.getElementById('privateMsgSender').close()">Close</button>
+    <button
+        id="closeDialog"
+        onclick="document.getElementById('privateMsgSender').close()"
+    >
+        Close
+    </button>
 </dialog>
 
 <script>
     let currentGroup = null;
     function joinGroup() {
-        document.getElementById('participants').innerHTML = ""; // Clear participants
-        document.getElementById('chatMessages').innerHTML = ""; // Clear chat messages
+        document.getElementById("participants").innerHTML = ""; // Clear participants
+        document.getElementById("chatMessages").innerHTML = ""; // Clear chat messages
 
         // Clear participants except the current user
-        for(let user_id in participants) {
-            if(user_id !== skapi.user.user_id) {
+        for (let user_id in participants) {
+            if (user_id !== skapi.user.user_id) {
                 delete participants[user_id];
             }
         }
 
-        console.log('Initial hash:', location.hash);
+        console.log("Initial hash:", location.hash);
         if (location.hash) {
-            document.getElementById('chatbox').hidden = false; // Show chatbox
-            document.getElementById('groupList').hidden = true; // Hide group list
+            document.getElementById("chatbox").hidden = false; // Show chatbox
+            document.getElementById("groupList").hidden = true; // Hide group list
 
             // Get the new hash value
-            currentGroup = location.hash.replace('#', '');
-            document.getElementById('el_groupname').innerText = `"${currentGroup}"`;
+            currentGroup = location.hash.replace("#", "");
+            document.getElementById(
+                "el_groupname"
+            ).innerText = `"${currentGroup}"`;
 
-            skapi.getRealtimeUsers({
-                group: currentGroup
-            }).then(u=> (Promise.all(u.list.map(user=>getUserInfo(user.user_id)))).then(res=>console.log(participants)) );
+            skapi
+                .getRealtimeUsers({
+                    group: currentGroup,
+                })
+                .then((u) =>
+                    Promise.all(
+                        u.list.map((user) => getUserInfo(user.user_id))
+                    ).then((res) => console.log(participants))
+                );
 
-            return skapi.joinRealtime({group: currentGroup});
-        }
-        else {
-            document.getElementById('chatbox').hidden = true; // Hide chatbox
-            document.getElementById('groupList').hidden = false; // Show group list
-            document.getElementById('el_groupname').innerText = "";
+            return skapi.joinRealtime({ group: currentGroup });
+        } else {
+            document.getElementById("chatbox").hidden = true; // Hide chatbox
+            document.getElementById("groupList").hidden = false; // Show group list
+            document.getElementById("el_groupname").innerText = "";
             return skapi.joinRealtime({ group: null }); // leave group
         }
     }
     // Add an event listener for the hashchange event
-    window.addEventListener('hashchange', joinGroup);
+    window.addEventListener("hashchange", joinGroup);
 
     // Optionally, handle the initial hash when the page loads
-    document.addEventListener('DOMContentLoaded', joinGroup);
+    document.addEventListener("DOMContentLoaded", joinGroup);
 </script>
